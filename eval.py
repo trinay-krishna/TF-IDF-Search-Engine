@@ -1,6 +1,6 @@
 from parsing import parse_file
 from plot import plot_results
-from search import TF_IDF
+from search import get_search_function
 
 
 def load_relevance(path="CISI.REL"):
@@ -22,7 +22,9 @@ def precision_recall(retrieved_ids, relevant_ids):
     return precision, recall
 
 
-def evaluate(k_values=(5, 10, 20)):
+def evaluate(k_values=(5, 10, 20), method="tfidf"):
+    """method: "tfidf" or "embeddings". Plots are saved as <method>_precision.png / <method>_recall.png."""
+    search = get_search_function(method)
     queries = parse_file("CISI.QRY", "query")
     relevance = load_relevance()
 
@@ -34,7 +36,7 @@ def evaluate(k_values=(5, 10, 20)):
         if not relevant_ids:
             continue
 
-        ranked = [doc_id for doc_id, _ in TF_IDF(query.content)]
+        ranked = [doc_id for doc_id, _ in search(query.content)]
         evaluated += 1
 
         for k in k_values:
@@ -42,6 +44,7 @@ def evaluate(k_values=(5, 10, 20)):
             totals[k][0] += precision
             totals[k][1] += recall
 
+    print(f"Method: {method}")
     print(f"Evaluated {evaluated} queries, skipped {len(queries) - evaluated} without judgments.")
     precisions = [totals[k][0] / evaluated for k in k_values]
     recalls = [totals[k][1] / evaluated for k in k_values]
@@ -50,7 +53,7 @@ def evaluate(k_values=(5, 10, 20)):
     for k, precision, recall in zip(k_values, precisions, recalls):
         print(f"{k:>4}  {precision:>9.4f}  {recall:>7.4f}")
 
-    plot_results(list(k_values), precisions, recalls)
+    plot_results(list(k_values), precisions, recalls, prefix=method)
 
 if __name__ == "__main__":
-    evaluate()
+    evaluate(method="embeddings")  # change to "embeddings" to evaluate the embedding search
