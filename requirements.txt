@@ -1,0 +1,4 @@
+numpy>=1.26
+matplotlib>=3.9
+scikit-learn>=1.6
+sentence-transformers>=5.0

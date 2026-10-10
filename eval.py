@@ -22,9 +22,9 @@ def precision_recall(retrieved_ids, relevant_ids):
     return precision, recall
 
 
-def evaluate(k_values=(5, 10, 20), method="tfidf"):
-    """method: "tfidf" or "embeddings". Plots are saved as <method>_precision.png / <method>_recall.png."""
-    search = get_search_function(method)
+def compute_metrics(search, k_values=(5, 10, 20)):
+    """Runs `search` on every judged query. Returns (precisions, recalls, evaluated, skipped),
+    with precisions/recalls averaged over queries, in k_values order."""
     queries = parse_file("CISI.QRY", "query")
     relevance = load_relevance()
 
@@ -44,10 +44,17 @@ def evaluate(k_values=(5, 10, 20), method="tfidf"):
             totals[k][0] += precision
             totals[k][1] += recall
 
-    print(f"Method: {method}")
-    print(f"Evaluated {evaluated} queries, skipped {len(queries) - evaluated} without judgments.")
     precisions = [totals[k][0] / evaluated for k in k_values]
     recalls = [totals[k][1] / evaluated for k in k_values]
+    return precisions, recalls, evaluated, len(queries) - evaluated
+
+
+def evaluate(k_values=(5, 10, 20), method="tfidf"):
+    """method: "tfidf", "sklearn", "embeddings" or "hybrid". Plots are saved as <method>_precision.png / <method>_recall.png."""
+    precisions, recalls, evaluated, skipped = compute_metrics(get_search_function(method), k_values)
+
+    print(f"Method: {method}")
+    print(f"Evaluated {evaluated} queries, skipped {skipped} without judgments.")
 
     print(f"{'k':>4}  {'precision':>9}  {'recall':>7}")
     for k, precision, recall in zip(k_values, precisions, recalls):
@@ -56,4 +63,4 @@ def evaluate(k_values=(5, 10, 20), method="tfidf"):
     plot_results(list(k_values), precisions, recalls, prefix=method)
 
 if __name__ == "__main__":
-    evaluate(method="embeddings")  # change to "embeddings" to evaluate the embedding search
+    evaluate(method="hybrid")  # "tfidf", "sklearn", "embeddings" or "hybrid"

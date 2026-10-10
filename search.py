@@ -18,50 +18,63 @@ yourselves
 
 documents = parse_file("CISI.txt")
 
-document_term_frequency_index = {}
-vocabulary = {}
+def build_tfidf(stopwords):
+    """Builds a TF-IDF search function that ignores the given stopwords."""
+    document_term_frequency_index = {}
+    vocabulary = {}
 
-for document in documents:
-    words = [w for w in re.findall(r"[a-zA-Z]+", document.content.lower()) if w not in STOPWORDS]
-    word_counts = Counter(words)
-    document_term_frequency_index[document.id] = dict(word_counts)
-
-    for word in word_counts:
-        vocabulary[word] = vocabulary.get(word, 0) + 1
-
-idf_index = {word: math.log(len(documents) / df) for word, df in vocabulary.items()}
-
-def term_frequency(word, document):
-    word_counts = document_term_frequency_index[document.id]
-    total_doc_word_count = sum(word_counts.values())
-
-    if total_doc_word_count == 0:
-        return 0
-
-    doc_word_count = word_counts.get(word, 0)
-
-    return doc_word_count/total_doc_word_count
-
-def TF_IDF(query):
-    words = set(re.findall(r"[a-zA-Z]+", query.lower()))
-    scores = {}
     for document in documents:
-        score = 0
-        for word in words:
-            if word not in idf_index:
-                continue
-            score += term_frequency(word, document) * idf_index[word]
-        if score > 0:
-            scores[document.id] = score
+        words = [w for w in re.findall(r"[a-zA-Z]+", document.content.lower()) if w not in stopwords]
+        word_counts = Counter(words)
+        document_term_frequency_index[document.id] = dict(word_counts)
 
-    return sorted(scores.items(), key=lambda item: item[1], reverse=True)
+        for word in word_counts:
+            vocabulary[word] = vocabulary.get(word, 0) + 1
+
+    idf_index = {word: math.log(len(documents) / df) for word, df in vocabulary.items()}
+
+    def term_frequency(word, document):
+        word_counts = document_term_frequency_index[document.id]
+        total_doc_word_count = sum(word_counts.values())
+
+        if total_doc_word_count == 0:
+            return 0
+
+        doc_word_count = word_counts.get(word, 0)
+
+        return doc_word_count/total_doc_word_count
+
+    def search(query):
+        words = set(re.findall(r"[a-zA-Z]+", query.lower()))
+        scores = {}
+        for document in documents:
+            score = 0
+            for word in words:
+                if word not in idf_index:
+                    continue
+                score += term_frequency(word, document) * idf_index[word]
+            if score > 0:
+                scores[document.id] = score
+
+        return sorted(scores.items(), key=lambda item: item[1], reverse=True)
+
+    return search
+
+TF_IDF = build_tfidf(STOPWORDS)
+TF_IDF_NO_STOPWORDS = build_tfidf(frozenset())
 
 def get_search_function(method):
-    """Returns the search function for "tfidf" or "embeddings". The embeddings
-    module is imported lazily so TF-IDF runs never load the model."""
+    """Returns the search function for "tfidf", "sklearn", "embeddings" or "hybrid".
+    The embeddings module is imported lazily so TF-IDF runs never load the model."""
     if method == "tfidf":
         return TF_IDF
+    if method == "sklearn":
+        from sklearn_search import sklearn_search
+        return sklearn_search
     if method == "embeddings":
         from embeddings import embedding_search
         return embedding_search
-    raise ValueError(f"Unknown method {method!r}; expected 'tfidf' or 'embeddings'")
+    if method == "hybrid":
+        from hybrid import hybrid_search
+        return hybrid_search
+    raise ValueError(f"Unknown method {method!r}; expected 'tfidf', 'sklearn', 'embeddings' or 'hybrid'")

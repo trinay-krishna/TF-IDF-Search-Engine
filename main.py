@@ -1,7 +1,7 @@
 from parsing import parse_file
 from search import get_search_function
 
-# Which search to use: "tfidf" or "embeddings". Change here as needed.
+# Which search to use: "tfidf", "sklearn", "embeddings" or "hybrid". Change here as needed.
 METHOD = "tfidf"
 
 

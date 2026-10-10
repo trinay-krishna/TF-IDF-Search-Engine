@@ -41,3 +41,34 @@ def plot_results(k_values, precisions, recalls, output_dir=RESULTS_DIR, prefix="
     stem = f"{prefix}_" if prefix else ""
     _plot_metric(k_values, precisions, "Precision", os.path.join(output_dir, f"{stem}precision.png"), PRECISION_YLIM)
     _plot_metric(k_values, recalls, "Recall", os.path.join(output_dir, f"{stem}recall.png"), RECALL_YLIM)
+
+
+def plot_overlay(k_values, series, ylabel, output_path):
+    """One line per method on shared axes, y-axis starting at 0. series: {label: [values per k]}."""
+    plt.figure()
+    for label, values in series.items():
+        plt.plot(k_values, values, marker="o", label=label)
+    plt.ylim(bottom=0)
+    plt.xticks(k_values)
+    plt.xlabel("k")
+    plt.ylabel(f"{ylabel}@k")
+    plt.title(f"{ylabel} vs k")
+    plt.grid(True)
+    plt.legend()
+    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close()
+
+
+def plot_alpha_sweep(alphas, series, output_path, ylabel="P@10"):
+    """alpha on the x-axis, one line per hybrid variant. series: {label: [values per alpha]}."""
+    plt.figure()
+    for label, values in series.items():
+        plt.plot(alphas, values, marker="o", label=label)
+    plt.ylim(bottom=0)
+    plt.xlabel("alpha (weight of TF-IDF score)")
+    plt.ylabel(ylabel)
+    plt.title(f"Hybrid {ylabel} vs alpha")
+    plt.grid(True)
+    plt.legend()
+    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close()
